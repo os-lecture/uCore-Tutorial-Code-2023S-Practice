@@ -52,8 +52,20 @@ uint64 sys_sbrk(int n)
 	uint64 addr;
         struct proc *p = curr_proc();
         addr = p->program_brk;
-        if(growproc(n) < 0)
+        int heap_size = addr + n - p->heap_bottom;
+        if(heap_size < 0){
+                errorf("out of heap_bottom\n");
                 return -1;
+        }
+        else{
+                p->program_brk += n;
+                if(n < 0){
+                        printf("uvmdealloc\n");
+                        uvmdealloc(p->pagetable, addr, addr + n);
+                }
+        }
+	//if(growproc(n) < 0)
+        //        return -1;
         return addr;	
 }
 
