@@ -16,6 +16,7 @@ int copyout(pagetable_t, uint64, char *, uint64);
 int copyin(pagetable_t, char *, uint64, uint64);
 int copyinstr(pagetable_t, char *, uint64, uint64);
 
+pagetable_t get_kernel_pagetable();
 uint64 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm);
 uint64 uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz);
 

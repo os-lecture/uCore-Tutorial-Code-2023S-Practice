@@ -66,6 +66,8 @@ found:
 	p->max_page = 0;
 	p->program_brk = 0;
         p->heap_bottom = 0;
+	p->kpgtbl = 0;
+	p->trapframe_base = 0;
 	memset(&p->context, 0, sizeof(p->context));
 	memset((void *)p->kstack, 0, KSTACK_SIZE);
 	memset((void *)p->trapframe, 0, TRAP_PAGE_SIZE);

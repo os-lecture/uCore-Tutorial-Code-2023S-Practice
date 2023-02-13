@@ -40,6 +40,8 @@ struct proc {
 	uint64 max_page;
 	uint64 program_brk;
 	uint64 heap_bottom;
+	pagetable_t kpgtbl;
+	uint64 trapframe_base;
 	/*
 	* LAB1: you may need to add some new fields here
 	*/

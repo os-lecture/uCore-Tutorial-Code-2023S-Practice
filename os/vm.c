@@ -34,6 +34,12 @@ void kvm_init(void)
 	infof("enable pageing at %p", r_satp());
 }
 
+//add by hw
+pagetable_t get_kernel_pagetable(){
+	return kernel_pagetable;
+}
+
+
 // Return the address of the PTE in page table pagetable
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page-table pages.

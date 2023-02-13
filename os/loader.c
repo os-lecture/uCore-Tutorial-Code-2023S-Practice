@@ -23,10 +23,12 @@ void loader_init()
 	app_info_ptr++;
 }
 
-pagetable_t bin_loader(uint64 start, uint64 end, struct proc *p)
+pagetable_t bin_loader(uint64 start, uint64 end, struct proc *p, int num)
 {
-	pagetable_t pg = uvmcreate();
-	if (mappages(pg, TRAPFRAME, PGSIZE, (uint64)p->trapframe,
+	//pagetable_t pg = uvmcreate();
+	pagetable_t pg = get_kernel_pagetable();
+	uint64 trapframe = TRAPFRAME - (num + 1)* PAGE_SIZE;
+	if (mappages(pg, trapframe, PGSIZE, (uint64)p->trapframe,
 		     PTE_R | PTE_W) < 0) {
 		panic("mappages fail");
 	}
@@ -40,12 +42,13 @@ pagetable_t bin_loader(uint64 start, uint64 end, struct proc *p)
 	}
 	end = PGROUNDUP(end);
 	uint64 length = end - start;
-	if (mappages(pg, BASE_ADDRESS, length, start,
+	uint64 base_address = BASE_ADDRESS + (num * (p->max_page + 20)) * PAGE_SIZE; //reserved 100 pages for heap of each task
+	if (mappages(pg, base_address, length, start,
 		     PTE_U | PTE_R | PTE_W | PTE_X) != 0) {
 		panic("mappages fail");
 	}
 	p->pagetable = pg;
-	uint64 ustack_bottom_vaddr = BASE_ADDRESS + length + PAGE_SIZE;
+	uint64 ustack_bottom_vaddr = base_address + length + PAGE_SIZE;
 	if (USTACK_SIZE != PAGE_SIZE) {
 		// Fix in ch5
 		panic("Unsupported");
@@ -53,11 +56,12 @@ pagetable_t bin_loader(uint64 start, uint64 end, struct proc *p)
 	mappages(pg, ustack_bottom_vaddr, USTACK_SIZE, (uint64)kalloc(),
 		 PTE_U | PTE_R | PTE_W | PTE_X);
 	p->ustack = ustack_bottom_vaddr;
-	p->trapframe->epc = BASE_ADDRESS;
+	p->trapframe->epc = base_address;
 	p->trapframe->sp = p->ustack + USTACK_SIZE;
 	p->max_page = PGROUNDUP(p->ustack + USTACK_SIZE - 1) / PAGE_SIZE;
 	p->program_brk = p->ustack + USTACK_SIZE;
         p->heap_bottom = p->ustack + USTACK_SIZE;
+	p->trapframe_base = trapframe;
 	return pg;
 }
 
@@ -67,7 +71,7 @@ int run_all_app()
 	for (int i = 0; i < app_num; ++i) {
 		struct proc *p = allocproc();
 		tracef("load app %d", i);
-		bin_loader(app_info_ptr[i], app_info_ptr[i + 1], p);
+		bin_loader(app_info_ptr[i], app_info_ptr[i + 1], p, i);
 		p->state = RUNNABLE;
 		/*
 		* LAB1: you may need to initialize your new fields of proc here
