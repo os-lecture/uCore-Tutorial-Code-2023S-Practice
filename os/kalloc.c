@@ -12,6 +12,8 @@ struct {
 	struct linklist *freelist;
 } kmem;
 
+uint64 page_ref[ (PHYSTOP - KERNBASE)/PAGE_SIZE] = {0};
+
 void freerange(void *pa_start, void *pa_end)
 {
 	char *p;
@@ -35,6 +37,13 @@ void kfree(void *pa)
 	if (((uint64)pa % PGSIZE) != 0 || (char *)pa < ekernel ||
 	    (uint64)pa >= PHYSTOP)
 		panic("kfree");
+	
+	
+	if(page_ref_get((uint64)pa) > 1){
+		page_ref_reduce((uint64)pa, 1);
+		return;
+	}
+	
 	// Fill with junk to catch dangling refs.
 	memset(pa, 1, PGSIZE);
 	l = (struct linklist *)pa;
@@ -52,6 +61,19 @@ void *kalloc()
 	if (l) {
 		kmem.freelist = l->next;
 		memset((char *)l, 5, PGSIZE); // fill with junk
+		page_ref_add((uint64)l, 1);
 	}
 	return (void *)l;
+}
+
+void page_ref_add(uint64 pa, int n){
+	page_ref[(PGROUNDDOWN(pa)-KERNBASE)/PGSIZE] += n;
+}
+
+void page_ref_reduce(uint64 pa, int n){
+        page_ref[(PGROUNDDOWN(pa)-KERNBASE)/PGSIZE] -= n;
+}
+
+uint64 page_ref_get(uint64 pa){
+	return page_ref[(PGROUNDDOWN(pa)-KERNBASE)/PGSIZE];
 }

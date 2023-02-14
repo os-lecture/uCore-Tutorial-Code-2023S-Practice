@@ -69,8 +69,15 @@ void usertrap()
 			trapframe->epc += 4;
 			syscall();
 			break;
+		case StorePageFault:{
+			uint64 va = r_stval();
+			if(cowcopy(va) == -1){
+				errorf("Copy on Write Failed!\n");
+				exit(-2);
+			}
+			break;
+		}
 		case StoreMisaligned:
-		case StorePageFault:
 		case InstructionMisaligned:
 		case InstructionPageFault:
 		case LoadMisaligned:
